@@ -13,6 +13,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+DIVIDE_BY_ZERO_MESSAGE = "Cannot divide by zero"
+INVALID_EXPRESSION_MESSAGE = "Invalid expression"
+
 
 class CalculatorWindow(QMainWindow):
     """A small calculator supporting the four basic arithmetic operations."""
@@ -103,7 +106,7 @@ class CalculatorWindow(QMainWindow):
 
         if value == ".":
             self.append_decimal(current_text)
-        elif current_text == "Error" or current_text == "0":
+        elif self.has_error() or current_text == "0":
             self.display.setText(value)
         else:
             self.display.setText(current_text + value)
@@ -111,7 +114,7 @@ class CalculatorWindow(QMainWindow):
     def backspace(self):
         """Remove the last entered character from the display."""
         current_text = self.display.text()
-        if current_text == "Error" or len(current_text) <= 1:
+        if self.has_error() or len(current_text) <= 1:
             self.display.setText("0")
         else:
             self.display.setText(current_text[:-1])
@@ -119,7 +122,7 @@ class CalculatorWindow(QMainWindow):
     def toggle_sign(self):
         """Toggle the sign of the number currently being entered."""
         current_text = self.display.text()
-        if current_text == "Error" or current_text == "0":
+        if self.has_error() or current_text == "0":
             self.display.setText("0")
             return
 
@@ -135,7 +138,7 @@ class CalculatorWindow(QMainWindow):
     def calculate_percentage(self):
         """Convert the number currently being entered into a percentage."""
         current_text = self.display.text()
-        if current_text == "Error":
+        if self.has_error():
             self.display.setText("0")
             return
 
@@ -147,11 +150,11 @@ class CalculatorWindow(QMainWindow):
             percentage = float(current_number) / 100
             self.display.setText(expression_start + str(percentage))
         except ValueError:
-            self.display.setText("Error")
+            self.display.setText(INVALID_EXPRESSION_MESSAGE)
 
     def append_decimal(self, current_text):
         """Add a decimal point only when the current number does not contain one."""
-        if current_text == "Error" or current_text == "0":
+        if self.has_error() or current_text == "0":
             self.display.setText("0.")
             return
 
@@ -164,14 +167,21 @@ class CalculatorWindow(QMainWindow):
 
         # Only digits, spaces and the four operators are allowed before evaluation.
         if not re.fullmatch(r"[0-9.+*/ \-]+", expression):
-            self.display.setText("Error")
+            self.display.setText(INVALID_EXPRESSION_MESSAGE)
             return
 
         try:
             result = eval(expression, {"__builtins__": {}}, {})
             self.display.setText(str(result))
+        except ZeroDivisionError:
+            self.display.setText(DIVIDE_BY_ZERO_MESSAGE)
         except (ArithmeticError, SyntaxError):
-            self.display.setText("Error")
+            self.display.setText(INVALID_EXPRESSION_MESSAGE)
+
+
+    def has_error(self):
+        """Return whether the display currently shows an application error."""
+        return self.display.text() in {DIVIDE_BY_ZERO_MESSAGE, INVALID_EXPRESSION_MESSAGE}
 
 
 if __name__ == "__main__":
